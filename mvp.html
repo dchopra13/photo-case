@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Photo Finder: recognise it, don't describe it</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2230;--mu:#4b5365;--cd:#fff;--ac:#1a4fd6;--ac2:#fff;--bd:#b9bfcc;--ok:#0b5d4b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--fg:#eef0f4;--mu:#b4bac8;--cd:#1e232c;--ac:#8fb0ff;--ac2:#101420;--bd:#475066;--ok:#6fd3b8}}
+:root[data-theme="dark"]{--bg:#14171d;--fg:#eef0f4;--mu:#b4bac8;--cd:#1e232c;--ac:#8fb0ff;--ac2:#101420;--bd:#475066;--ok:#6fd3b8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+main{max-width:780px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;line-height:1.2;margin:0 0 6px}
+h2{font-size:18px;margin:22px 0 8px}
+p{margin:0 0 10px;color:var(--mu)}
+button{font:inherit;cursor:pointer;border:1.5px solid var(--bd);background:var(--cd);color:var(--fg);border-radius:8px;padding:8px 12px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+button.p{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.card{background:var(--cd);border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px}
+input{font:inherit;flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bd);background:var(--cd);color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.t{display:flex;flex-direction:column;gap:6px;background:var(--cd);border:1.5px solid var(--bd);border-radius:10px;padding:10px}
+.t .e{font-size:40px;text-align:center}.t .d{font-size:14px;color:var(--mu);flex:1}
+.t button{font-size:14px;padding:6px 8px}
+.chip{border-radius:999px;font-size:14px;padding:4px 10px}
+.mem li{margin:2px 0}
+.big{font-size:22px;font-weight:700;color:var(--ok)}
+[hidden]{display:none!important}
+</style></head><body><main>
+<h1>Find the photo you half-remember</h1>
+<p>Demo gallery of 27 sample photos (no real libraries). Pick a task, then try to find the photo using only what that person remembered. You can type, or tap answers to narrow things down.</p>
+
+<h2>1. Pick a task</h2>
+<div class="row" id="tasks"></div>
+
+<section id="work" hidden>
+ <h2>2. What you remember</h2>
+ <div class="card mem"><ul id="mem" style="margin:0;padding-left:20px"></ul></div>
+ <h2>3. Search</h2>
+ <div class="row"><input id="q" placeholder="Type any clue, or leave empty" aria-label="Search clue"><button class="p" id="go">Search</button><button id="none">I can't describe it</button></div>
+ <div class="row" id="chips" style="margin-top:8px"></div>
+ <div class="card" id="qbox" style="margin-top:10px" hidden></div>
+ <p id="note" style="margin-top:10px"></p>
+ <div class="grid" id="grid"></div>
+ <div class="card" id="res" hidden style="margin-top:14px"></div>
+</section>
+</main>
+<script>
+// emoji, description, type, setting, subject, colour, keywords
+const D=[
+['📕','Screenshot of a text: “must read” with a yellow book cover','screenshot','indoors','text','yellow','book recommendation must read message yellow cover'],
+['🦖','Toddler in a green T-rex costume at a pumpkin patch','photo','outdoors','person','green','kid son costume dinosaur halloween pumpkin leo'],
+['🧀','Pasta served inside a cheese wheel, red tablecloth','photo','indoors','food','warm','pasta rome italy restaurant cheese wheel cacio e pepe food'],
+['🌅','Friends on a boat, pink sky, orange spritz drinks, sunglasses','photo','outdoors','person','pink','boat sunset friends aperol spritz drink sunglasses sky'],
+['🛂','Passport ID page on blue bedsheets','document','indoors','text','blue','passport id document bed blue sheets'],
+['🐱','Cat glaring out of a cardboard box','photo','indoors','pet','neutral','cat luna box cardboard glaring pet'],
+['📖','Shelf of physical books in a library','photo','indoors','object','yellow','book books library shelf'],
+['📗','Novel on a cafe table','photo','indoors','object','green','book novel cafe table'],
+['📱','Screenshot of a chat about dinner plans','screenshot','indoors','text','blue','chat message dinner text screenshot'],
+['📱','Screenshot of a train ticket','screenshot','indoors','text','blue','ticket train screenshot'],
+['🛳️','Ferry deck at noon over blue water','photo','outdoors','scene','blue','boat ferry water sea'],
+['🌇','Orange sunset over a beach, nobody in it','photo','outdoors','scene','warm','sunset beach sky orange'],
+['🌊','Empty lake under a pink sky','photo','outdoors','scene','pink','lake sunset boat water pink sky'],
+['🍹','Orange spritz drink on a restaurant table','photo','indoors','food','warm','aperol spritz drink orange restaurant'],
+['🍝','Spaghetti at a casual diner','photo','indoors','food','warm','pasta spaghetti food diner'],
+['🧀','Cheese counter at a market','photo','indoors','food','warm','cheese market italy food'],
+['🦕','Dinosaur skeleton at a museum','photo','indoors','object','neutral','dinosaur museum bones'],
+['🧸','Plastic toy dinosaur on a carpet','photo','indoors','object','green','dinosaur toy plastic'],
+['👕','Green shirt on a hanger','photo','indoors','object','green','shirt green clothes'],
+['🎃','Pumpkin patch with nobody in it','photo','outdoors','scene','warm','pumpkin patch halloween farm'],
+['🎟️','Boarding pass on a table','document','indoors','text','blue','boarding pass flight ticket passport travel'],
+['🪪','Driver licence scan','document','indoors','text','neutral','licence id card document'],
+['🪪','Friend’s ID card photo','document','indoors','text','blue','id card document friend'],
+['🐈','Cat asleep on a sofa','photo','indoors','pet','neutral','cat sleeping sofa pet luna'],
+['📦','Stack of delivery boxes at the door','photo','indoors','object','neutral','box boxes amazon delivery cardboard'],
+['🐶','Dog sitting in a cardboard box','photo','indoors','pet','neutral','dog box cardboard pet'],
+['🧳','Suitcase open on a bed','photo','indoors','object','blue','bed suitcase travel']];
+const T=[
+{n:'The book screenshot',a:0,m:['Someone texted it to you, maybe said “must read”','The book had a yellow cover','You forgot the title, author, date and who sent it']},
+{n:'The dinosaur costume',a:1,m:['Your son in a green T-rex suit at a pumpkin patch','It was 2018 or 2019, you’re not sure','You forgot the name of the farm']},
+{n:'The pasta in Rome',a:2,m:['Pasta served in a cheese wheel','A place with red tablecloths, Rome, about 2017','You forgot the restaurant name and the month']},
+{n:'The boat sunset',a:3,m:['Friends on a boat, very pink sky, Aperol','Sunglasses, about two years ago','You forgot which lake and who took it']},
+{n:'The passport page',a:4,m:['Your passport open on your bed, blue sheets','Taken about five years ago','You forgot why you took it and the exact year']},
+{n:'The cat in the box',a:5,m:['Your cat Luna glaring from a cardboard box','Last winter','You forgot the date and whether it was day or night']}];
+const SY={dino:'dinosaur',trex:'dinosaur',spritz:'spritz',aperol:'spritz',kitty:'cat'};
+const F=['type','setting','subject','colour'],FI={type:2,setting:3,subject:4,colour:5};
+const QT={type:'Is it a camera photo, a screenshot or a document?',setting:'Was it indoors or outdoors?',subject:'What is the main thing in it?',colour:'Which colour stands out most?'};
+const $=i=>document.getElementById(i);
+let S;
+function fresh(t){S={t,q:'',f:{},sk:{},like:null,s:0,k:0,t0:Date.now(),done:false}}
+const tk=()=>S.q.toLowerCase().split(/\W+/).filter(w=>w.length>2).map(w=>SY[w]||w);
+const sc=i=>{const b=(D[i][1]+' '+D[i][6]).toLowerCase();let s=0;tk().forEach(w=>{if(b.includes(w))s++});if(S.like!==null)F.forEach(f=>{if(D[i][FI[f]]===D[S.like][FI[f]])s+=.5});return s};
+function cands(){let a=D.map((_,i)=>i).filter(i=>F.every(f=>!S.f[f]||D[i][FI[f]]===S.f[f]));S.miss=false;
+ if(tk().length){const m=a.filter(i=>sc(i)>=1);if(m.length)a=m;else S.miss=true}
+ return a.sort((x,y)=>sc(y)-sc(x)||x-y)}
+function nextQ(a){let best=null,bs=2;F.forEach(f=>{if(S.f[f]||S.sk[f])return;const c={};a.forEach(i=>{const v=D[i][FI[f]];c[v]=(c[v]||0)+1});const v=Object.values(c);if(v.length<2)return;const m=Math.max(...v)/a.length;if(m<bs){bs=m;best=[f,c]}});return best}
+function draw(){
+ const a=cands(),top=a.slice(0,12),q=nextQ(a);
+ $('chips').innerHTML=F.filter(f=>S.f[f]).map(f=>`<button class="chip" data-rm="${f}" aria-label="Remove filter ${S.f[f]}">${S.f[f]} ✕</button>`).join('');
+ $('qbox').hidden=!q||a.length<=3||S.done;
+ if(q)$('qbox').innerHTML=`<strong>${QT[q[0]]}</strong><div class="row" style="margin-top:8px">${Object.entries(q[1]).map(([v,n])=>`<button data-f="${q[0]}" data-v="${v}">${v} (${n})</button>`).join('')}<button data-sk="${q[0]}">Not sure</button></div>`;
+ $('note').textContent=(S.miss?'No exact match for that wording, so showing everything. Tap an answer above to narrow it down. ':'')+`${a.length} of ${D.length} photos match${a.length>12?' (showing the first 12)':''}.`;
+ $('grid').innerHTML=top.map(i=>`<div class="t"><div class="e" aria-hidden="true">${D[i][0]}</div><div class="d">${D[i][1]}</div><button data-like="${i}">More like this</button><button class="p" data-pick="${i}">This is it</button></div>`).join('');
+}
+function pick(i){
+ const ok=i===T[S.t].a,sec=Math.round((Date.now()-S.t0)/1000);S.done=true;
+ const line=`Task ${S.t+1} (${T[S.t].n}): ${ok?'found':'wrong photo'} · ${S.s} searches · ${S.k} narrowing taps · ${sec}s`;
+ $('res').hidden=false;
+ $('res').innerHTML=ok?`<div class="big">Found it</div><p>${line}</p><p>Send this line to the researcher, plus one sentence on what felt easy or hard.</p><button data-copy="${line}">Copy result</button> <button data-reset>Try another task</button>`:`<div class="big" style="color:var(--fg)">Not this one</div><p>${D[i][1]}. Keep narrowing, or pick another photo.</p>`;
+ if(!ok)S.done=false;
+ $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('tasks').innerHTML=T.map((t,i)=>`<button data-task="${i}">${i+1}. ${t.n}</button>`).join('');
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+ if(d.task!==undefined){fresh(+d.task);$('work').hidden=false;$('res').hidden=true;$('q').value='';$('mem').innerHTML=T[S.t].m.map(x=>`<li>${x}</li>`).join('');draw();$('work').scrollIntoView({behavior:'smooth'})}
+ else if(d.reset!==undefined){$('work').hidden=true;window.scrollTo({top:0,behavior:'smooth'})}
+ else if(!S)return;
+ else if(b.id==='go'){S.q=$('q').value;S.s++;draw()}
+ else if(b.id==='none'){S.q='';$('q').value='';S.s++;draw()}
+ else if(d.f){S.f[d.f]=d.v;S.k++;draw()}
+ else if(d.sk){S.sk[d.sk]=1;draw()}
+ else if(d.rm){delete S.f[d.rm];delete S.sk[d.rm];draw()}
+ else if(d.like!==undefined){S.like=+d.like;S.k++;draw()}
+ else if(d.pick!==undefined)pick(+d.pick)
+ else if(d.copy){try{navigator.clipboard.writeText(d.copy);b.textContent='Copied'}catch(x){b.textContent='Copy failed: select the text above'}}
+});
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
+</script></body></html>

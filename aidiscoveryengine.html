@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retrieval Discovery Engine: where does photo search break?</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2230;--mu:#4b5365;--cd:#fff;--ac:#1a4fd6;--ac2:#fff;--bd:#b9bfcc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--fg:#eef0f4;--mu:#b4bac8;--cd:#1e232c;--ac:#8fb0ff;--ac2:#101420;--bd:#475066}}
+:root[data-theme="dark"]{--bg:#14171d;--fg:#eef0f4;--mu:#b4bac8;--cd:#1e232c;--ac:#8fb0ff;--ac2:#101420;--bd:#475066}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;line-height:1.2;margin:0 0 6px}h2{font-size:19px;margin:26px 0 8px}
+p,li{color:var(--mu)}p{margin:0 0 10px}
+.card{background:var(--cd);border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.w{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{border-bottom:1.5px solid var(--bd);padding:8px 8px;text-align:left;vertical-align:top}th{color:var(--fg)}
+td:first-child{color:var(--fg);font-weight:600}
+textarea{width:100%;min-height:150px;box-sizing:border-box;font:inherit;padding:10px;border-radius:8px;border:1.5px solid var(--bd);background:var(--cd);color:var(--fg)}
+button{font:inherit;cursor:pointer;border:1.5px solid var(--ac);background:var(--ac);color:var(--ac2);font-weight:600;border-radius:8px;padding:8px 14px;margin-top:8px}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.tag{display:inline-block;border:1.5px solid var(--bd);border-radius:999px;padding:1px 9px;font-size:14px;margin:2px 4px 2px 0;color:var(--fg)}
+.bar{display:inline-block;height:12px;background:var(--ac);border-radius:3px;vertical-align:middle}
+</style></head><body><main>
+<h1>Where does photo search break when memory is incomplete?</h1>
+<p>A coding framework applied to about 100 Google Photos Play Store reviews (2024 to 2026), plus 6 observed retrieval sessions. Counts below are from manual coding of that sample, so treat them as directional, not statistical.</p>
+
+<h2>How the workflow works</h2>
+<div class="card"><ol style="margin:0;padding-left:20px">
+<li><strong>Collect:</strong> public reviews and community posts, plus interview notes from observed retrieval tasks.</li>
+<li><strong>Code each item on three axes:</strong> what the user was trying to retrieve, which route they used (search, people, browse, albums), and where it failed.</li>
+<li><strong>Map each failure</strong> to the metric tree: Express (put the memory into words), Understand (app matches the clue), Recognise (judge candidates), Refine (improve after a miss).</li>
+<li><strong>Compare themes</strong> by volume, break point and whether the fix needs intelligence, and rank the opportunities.</li></ol></div>
+
+<h2>What the reviews say</h2>
+<div class="w"><table>
+<tr><th>Theme</th><th>Reviews (of ~100)</th><th>Breaks at</th><th>What users report</th></tr>
+<tr><td>People and pet tags can't be fixed</td><td>13 <span class="bar" style="width:104px"></span></td><td>Understand, then Refine</td><td>Faces missed or merged wrongly, and no way to add a face manually. Google's reply: that isn't supported.</td></tr>
+<tr><td>Timeline hard to scan</td><td>9 <span class="bar" style="width:72px"></span></td><td>Recognise</td><td>Random giant thumbnails, unclear date separators and odd ordering slow down visual scanning.</td></tr>
+<tr><td>AI search trusted less than old search</td><td>9 <span class="bar" style="width:72px"></span></td><td>Understand</td><td>Slower, misses photos, "nothing found" after a brief hit, sometimes overrides the user's intent.</td></tr>
+<tr><td>Restored, edited or downloaded copies land in the wrong place</td><td>4 <span class="bar" style="width:32px"></span></td><td>Recognise</td><td>Photos sit on old dates, so users scroll years of library to find something they just handled.</td></tr>
+<tr><td>Screenshots and documents are a pile</td><td>3 <span class="bar" style="width:24px"></span></td><td>Understand</td><td>Thousands of screenshots, an hour lost hunting one reference, and auto "Documents" albums often wrong.</td></tr>
+</table></div>
+<div class="card"><strong>Reading across the themes.</strong>
+<ul style="margin:6px 0 0;padding-left:20px">
+<li>Every fallback is degraded at once: search, people groups and date scrolling. When the first route fails, users have nowhere good to go.</li>
+<li>Most fixes users ask for are about <em>recognising and refining</em>, not about a smarter search model. Google is already investing in the model side.</li>
+<li>Time cost shows up as hours (one reviewer lost over an hour looking for a single order photo).</li></ul></div>
+
+<h2>Test it: paste reviews and get them coded</h2>
+<p>Paste any reviews, one per paragraph (blank line between them). The tagger uses keyword rules, so it is a fast first pass, not a replacement for reading them.</p>
+<textarea id="in" aria-label="Paste reviews here" placeholder="Paste reviews here, separated by blank lines"></textarea>
+<button id="run">Code these reviews</button>
+<div id="out" aria-live="polite"></div>
+</main>
+<script>
+const R=[
+['People and pet tags','Understand/Refine',/\b(face|facial|people|person|pets?|merge|label)s?\b/i],
+['Timeline hard to scan','Recognise',/thumbnail|chronolog|grid|timeline|date separator|random (large|big|photo)|order(ed|ing)?\b/i],
+['Search quality','Understand',/\b(search|nothing found|no results|can'?t find|cannot find|find a (specific )?photo)\b/i],
+['Copies in wrong place','Recognise',/restored|recently added|original (calendar )?date|downloaded? .*(date|month|year)|saved? (a )?copy/i],
+['Screenshots and documents','Understand',/screenshot|document|receipt/i],
+['Time cost','Refine',/\b(an? hour|hours|forever|minutes|scrolling)\b/i]];
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+$('run').onclick=()=>{
+ const items=$('in').value.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+ if(!items.length){$('out').innerHTML='<p>Paste at least one review above, with a blank line between reviews.</p>';return}
+ const tot={},brk={};let rows='';
+ items.forEach(t=>{const hit=R.filter(r=>r[2].test(t));
+  hit.forEach(h=>{tot[h[0]]=(tot[h[0]]||0)+1;brk[h[1]]=(brk[h[1]]||0)+1});
+  rows+=`<div class="card"><p style="color:var(--fg)">${esc(t.slice(0,140))}${t.length>140?'…':''}</p>${hit.length?hit.map(h=>`<span class="tag">${h[0]} → ${h[1]}</span>`).join(''):'<span class="tag">Not retrieval-related</span>'}</div>`});
+ const sum=Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${k}</td><td>${v} of ${items.length}</td></tr>`).join('');
+ $('out').innerHTML=`<h2>Summary</h2><div class="w"><table><tr><th>Theme</th><th>Reviews</th></tr>${sum||'<tr><td colspan="2">No retrieval themes found.</td></tr>'}</table></div><h2>Each review</h2>${rows}`;
+};
+</script></body></html>
